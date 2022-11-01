@@ -1,0 +1,138 @@
+---
+title: "Visualization_hw2"
+author: "Polina Pchelintseva"
+date: '2022-10-28'
+output: rmarkdown::github_document
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+  Задание 1.
+  
+  Загружаем данные
+```{r}
+dat <- read.csv('./insurance_cost.csv')
+```
+
+
+
+  Задание 2. 
+  Сделайте интерактивный plotly график отношения индекса массы тела и трат на
+страховку. Раскрасьте его по колонке smoker. 
+
+```{r, eval= FALSE}
+library(plotly)
+plot_ly(dat,
+  x = ~ bmi, y = ~ charges,
+  color = ~ smoker,
+  type = "scatter"
+)
+```
+
+
+
+
+  Задание 3. 
+  Сделайте тоже самое через ggplotly. 
+```{r}
+library(ggplot2)
+library(plotly)
+plot <- ggplot()+geom_point(data = dat, aes(x = bmi, y= charges, fill = smoker)) + theme_minimal()
+ggplotly(plot)
+```
+
+
+
+  Задание 4. 
+  Кратко сделайте корреляционный анализ данных insurance_cost. Посмотрите
+документацию пакетов, которые мы проходили на занятии и, исходя из этого,
+постройте минимум два новых типа графика (которые мы не строили на занятии).
+
+```{r}
+library(dplyr)
+dat_num <-  dat %>% select(is.integer | is.numeric)
+dat_cor <- cor(dat_num)
+library(corrr)
+rplot(dat_cor)
+
+
+```
+```{r}
+library(corrplot)
+corrplot(dat_cor, method = 'color', order = 'hclust', col = COL2('PiYG'))
+```
+
+
+  Задание 5. 
+  Превратите все номинативные переменные в бинарные/дамми. Т.е. sex и smoker
+должны стать бинарными (1/0), а каждое уникальное значение region – отдельной
+колонкой, где 1 говорит о наличии этого признака для наблюдения, а 0 – об отсутствии. Создайте новый датафрейм, где вы оставите только нумерические переменные.
+
+```{r}
+library(dplyr)
+library(caret)
+
+dmy <- dummyVars(" ~ .", data = dat)
+dat_new <- data.frame(predict(dmy, newdata = dat))
+dat_new_numeric <- dat_new %>% select(where(is.numeric))
+dat_new_numeric
+```
+
+
+Задание 6. Постройте иерархическую кластеризацию на этом датафрейме
+
+```{r}
+dat_new_scaled <- scale(dat_new_numeric)
+head(dat_new_scaled)
+library(factoextra)
+dat_new_numeric_dist = dist(dat_new_scaled, method = "euclidean")
+dat_new_numeric_hc <- hclust(d = dat_new_numeric_dist, 
+                        method = "ward.D2")
+fviz_dend(dat_new_numeric_hc, cex = 0.1)
+```
+
+
+  Задание 7. Используя документацию или предложенный
+учебник сделайте ещё несколько возможных графиков по иерархической
+кластеризации. Попробуйте раскрасить кластеры разными цветами. 
+
+```{r}
+fviz_dend(dat_new_numeric_hc, cex = 0.5, k = 5, k_colors = "jco", type = "circular")
+```
+```{r}
+fviz_dend(dat_new_numeric_hc, k = 4, cex = 0.4, horiz = TRUE, k_colors = "jco", rect = TRUE, rect_border = "jco", rect_fill = TRUE)
+```
+
+
+Задание 8. Сделайте одновременный график heatmap и иерархической кластеризации
+
+```{r}
+library(pheatmap)
+pheatmap(dat_new_scaled)
+```
+
+
+
+
+
