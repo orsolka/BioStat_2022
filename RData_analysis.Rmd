@@ -1,0 +1,48 @@
+---
+title: "RData"
+author: "Polina Pchelintseva"
+date: '2022-11-09'
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+ 
+```{r}
+library(dplyr)
+library(flextable)
+library(tidyr)
+library(tibble)
+dat <- read.csv("./data_blood.csv", encoding = "UTF-8")
+
+statistics <- list(
+      ` _Количество субъектов` = ~length(.x),
+      ` _Количество (есть данные)` = ~sum(!is.na(.x)),
+      ` _Нет данных` = ~sum(is.na(.x)),
+      ` _Ср. знач.` = ~ifelse(sum(!is.na(.x)) == 0, "Н/П*", mean(.x, na.rm = TRUE) %>% round(2) %>% as.character()),
+      ` _Станд. отклон.` = ~ifelse(sum(!is.na(.x)) < 3, "Н/П*", sd(.x, na.rm = TRUE) %>% round(2) %>% as.character()),
+      ` _95% ДИ для среднего` = ~sd(.x, na.rm = TRUE) %>% round(2) %>% as.character(),
+      ` _мин. - макс.` = ~ifelse(sum(!is.na(.x)) == 0, "Н/П*", paste0(min(.x, na.rm = TRUE) %>% round(2), " - ", max(.x, na.rm = TRUE) %>% round(2))),
+      ` _Медиана` = ~ifelse(sum(!is.na(.x)) == 0, "Н/П*", median(.x, na.rm = TRUE) %>% round(2) %>% as.character()),
+      ` _Q1 - Q3` = ~ifelse(sum(!is.na(.x)) == 0, "Н/П*", paste0(quantile(.x, 0.25, na.rm = TRUE) %>% round(2), " - ", quantile(.x, 0.75, na.rm = TRUE) %>% round(2)))
+)
+dat_num <- dat %>% select(matches("*_Е*"))
+dat_num[] <- lapply(dat_num, function(x) as.numeric(sub(",", ".", x)))
+#dat[] <- lapply(dat, function(x) as.numeric(sub(",", ".", x)))
+#dat_num[colsnum] <- sapply(dat_num[colsnum],as.numeric)
+dat_groups <- dat %>% select(`Группа`, `Возраст`, `Пол`, `Рост`, `Группа.крови`)
+new_dat <- cbind(dat_groups, dat_num)
+res <- new_dat %>% select(`Группа`, where(is.numeric)) %>% group_by(`Группа`) %>% summarise(across(where(is.numeric), statistics)) %>% mutate(across(everything(), as.character)) %>% pivot_longer(!`Группа`) %>% separate(name, into = c("Переменная","Статистика"), sep = "_ _") %>% rename(`Значение` = value) %>% flextable()
+res
+
+```
+  
+  
